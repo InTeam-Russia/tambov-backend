@@ -4,3 +4,8 @@
 venv/
 .idea/
 __pycache__/
+todo_app/
+init.sql
+restore_database.sh
+docker-compose.yaml
+Dockerfile
