@@ -44,7 +44,7 @@ async def select_by_inn(inn):
 #3009011845 (нн)
 
 @task_routers.get('/download_RAMD/{inn}')
-async def download_RAMD(inn):
+async def download_RAMD(inn, current_user: Annotated[User, Depends(get_current_user)]):
     with open('templates/OID_list.json') as j_file:
         OID_list = json.load(j_file)['records']
 
@@ -72,7 +72,7 @@ async def download_RAMD(inn):
     raise HTTPException(status_code=404, detail='Companies with entered INN do not exist')
 
 @task_routers.get('/download_IAMK/{inn}')
-async def download_IAMK(inn):
+async def download_IAMK(inn, current_user: Annotated[User, Depends(get_current_user)]):
     with open('templates/OID_list.json') as j_file:
         OID_list = json.load(j_file)['records']
 

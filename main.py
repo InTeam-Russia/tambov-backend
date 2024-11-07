@@ -11,7 +11,6 @@ app = FastAPI()
 app.include_router(router)
 app.include_router(task_routers)
 
-
 @app.on_event("startup")
 async def startup():
     await connect_to_db()
