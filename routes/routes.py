@@ -1,6 +1,8 @@
 import json
-from datetime import date
+import time
+import datetime
 from typing import Annotated
+from docxtpl import DocxTemplate
 
 import requests
 
@@ -14,39 +16,7 @@ from models.models import Date_model, User
 
 task_routers = APIRouter()
 
-
-@task_routers.post('/create_task')
-async def create_task(title: str, description: str, is_favourite: bool | None, icon: int, current_user: Annotated[User, Depends(get_current_user)]):
-    query = ('INSERT INTO tasks (title, description, author_id, is_favourite, icon) VALUES (:title, :description, :author_id, :is_favourite, :icon)')
-    values = {
-        'title': title,
-        'description': description,
-        'author_id': current_user.id,
-        'is_favourite': is_favourite,
-        'icon': icon
-    }
-    await db.execute(query=query, values=values)
-    return {'message': 'Task created successfully'}
-
-@task_routers.post('/delete_task/{id}')
-async def delete_task(id: int, current_user: Annotated[User, Depends(get_current_user)]):
-    query = ('DELETE FROM tasks WHERE id = :id')
-    await db.execute(query=query, values={'id': id})
-    return {'message': 'Task deleted successfully'}
-
-@task_routers.patch('/done_task/{id}')
-async def done_task(id: int, current_user: Annotated[User, Depends(get_current_user)]):
-    query = ('UPDATE tasks SET is_done = :done WHERE id = :id')
-    await db.execute(query=query, values={'done': True, 'id': current_user.id})
-    return {'message': 'Task set to done'}
-
-@task_routers.get('/select_tasks/')
-async def select_tasks(current_user: Annotated[User, Depends(get_current_user)]):
-    query = 'SELECT * FROM tasks WHERE author_id = :author_id'
-    result = await db.fetch_all(query=query, values={'author_id': current_user.id})
-    return {"User's tasks": result}
-
-
+#Response contains full information about company, needs to be formated on Frontend
 @task_routers.post('/get_data_by_inn/{inn}')
 async def select_by_inn(inn):
     headers = {
@@ -57,20 +27,50 @@ async def select_by_inn(inn):
 
     json_data = {
         'query': inn,
-        'count': 1,
+        'count': 10,
         'restrict_value': False,
     }
 
     response = requests.post('https://api.gigdata.ru/api/v2/suggest/party', headers=headers, json=json_data)
-    response_json = response.json()
-    if len(response_json['suggestions']) == 0:
+    response_json = response.json()['suggestions']
+    if len(response_json) == 0:
         raise HTTPException(status_code=404, detail='No suggestions')
-    on_print_data = {
-        'unrestricted_value': response_json['suggestions'][0]['unrestricted_value'],
-        'INN': response_json['suggestions'][0]['data']['inn'],
-        'OGRN': response_json['suggestions'][0]['data']['ogrn']
-    }
-    return on_print_data
+    data_lst = [el for el in response_json]
+    return data_lst
 #6318060980 (ИНН магнита)
 
+@task_routers.get('/download_RAMD/{inn}')
+async def download_RAMD(inn):
+    with open('templates/OID_list.json') as j_file:
+        OID_list = json.load(j_file)['records']
 
+    for dct in OID_list:
+        if dct['inn'] == str(inn) and ('deleteDate' not in dct):
+            doc = DocxTemplate('templates/Template_RAMD.docx')
+            context = {
+                'date': datetime.datetime.now().strftime('%d.%m.%Y'),
+                'full_name': dct['nameFull'],
+                'oid': dct['oid'],
+            }
+            doc.render(context)
+            doc.save(f'ready_documents/{dct['nameShort']}_RAMD.docx')
+            return {'message': 'File generated successfully and ready for download'}
+    raise HTTPException(status_code=404, detail='OID not found')
+
+@task_routers.get('/download_IAMK/{inn}')
+async def download_IAMK(inn):
+    with open('templates/OID_list.json') as j_file:
+        OID_list = json.load(j_file)['records']
+
+    for dct in OID_list:
+        if dct['inn'] == str(inn) and ('deleteDate' not in dct):
+            doc = DocxTemplate('templates/Template_IAMK.docx')
+            context = {
+                'date': datetime.datetime.now().strftime('%d.%m.%Y'),
+                'full_name': dct['nameFull'],
+                'oid': dct['oid'],
+            }
+            doc.render(context)
+            doc.save(f'ready_documents/{dct['nameShort']}_IAMK.docx')
+            return {'message': 'File generated successfully and ready for download'}
+    raise HTTPException(status_code=404, detail='OID not found')
