@@ -9,3 +9,5 @@ init.sql
 restore_database.sh
 docker-compose.yaml
 Dockerfile
+templates/
+ready_documents/

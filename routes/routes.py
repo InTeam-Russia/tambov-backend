@@ -1,6 +1,8 @@
 import json
 import time
 import datetime
+import urllib
+from io import BytesIO
 from typing import Annotated
 from docxtpl import DocxTemplate
 
@@ -8,6 +10,7 @@ import requests
 
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, validator
+from fastapi.responses import StreamingResponse
 
 from auth.auth import get_current_user
 from auth.db import db
@@ -34,10 +37,11 @@ async def select_by_inn(inn):
     response = requests.post('https://api.gigdata.ru/api/v2/suggest/party', headers=headers, json=json_data)
     response_json = response.json()['suggestions']
     if len(response_json) == 0:
-        raise HTTPException(status_code=404, detail='No suggestions')
+        raise HTTPException(status_code=404, detail='Companies with entered INN do not exist')
     data_lst = [el for el in response_json]
     return data_lst
 #6318060980 (ИНН магнита)
+#3009011845 (нн)
 
 @task_routers.get('/download_RAMD/{inn}')
 async def download_RAMD(inn):
@@ -53,9 +57,19 @@ async def download_RAMD(inn):
                 'oid': dct['oid'],
             }
             doc.render(context)
-            doc.save(f'ready_documents/{dct['nameShort']}_RAMD.docx')
-            return {'message': 'File generated successfully and ready for download'}
-    raise HTTPException(status_code=404, detail='OID not found')
+            file_stream = BytesIO()
+            doc.save(file_stream)
+            file_stream.seek(0)
+
+            encoded_filename = urllib.parse.quote(f"{dct['nameShort']}_RAMD.docx")
+            content_disposition = f"attachment; filename*=UTF-8''{encoded_filename}"
+
+            return StreamingResponse(
+                file_stream,
+                media_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                headers = {"Content-Disposition": content_disposition}
+            )
+    raise HTTPException(status_code=404, detail='Companies with entered INN do not exist')
 
 @task_routers.get('/download_IAMK/{inn}')
 async def download_IAMK(inn):
@@ -71,6 +85,17 @@ async def download_IAMK(inn):
                 'oid': dct['oid'],
             }
             doc.render(context)
-            doc.save(f'ready_documents/{dct['nameShort']}_IAMK.docx')
-            return {'message': 'File generated successfully and ready for download'}
-    raise HTTPException(status_code=404, detail='OID not found')
+            file_stream = BytesIO()
+            doc.save(file_stream)
+            file_stream.seek(0)
+
+            encoded_filename = urllib.parse.quote(f"{dct['nameShort']}_IAMK.docx")
+            content_disposition = f"attachment; filename*=UTF-8''{encoded_filename}"
+
+            return StreamingResponse(
+                file_stream,
+                media_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                headers = {"Content-Disposition": content_disposition}
+            )
+
+    raise HTTPException(status_code=404, detail='Companies with entered INN do not exist')
