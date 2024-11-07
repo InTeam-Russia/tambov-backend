@@ -11,7 +11,7 @@ app = FastAPI()
 app.include_router(router)
 app.include_router(task_routers)
 
-'''
+
 @app.on_event("startup")
 async def startup():
     await connect_to_db()
@@ -20,4 +20,3 @@ async def startup():
 @app.on_event("shutdown")
 async def shutdown():
     await close_all_connections()
-'''

@@ -18,9 +18,8 @@ class TokenData(BaseModel):
 class User(BaseModel):
     id: int
     username: str
-    email: str
-    first_name: str | None = None
-    last_name: str | None = None
+    name: str
+    surname: str
 
 
 #Model of how user will be in db. Inherits from User

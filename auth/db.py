@@ -3,7 +3,7 @@ from databases import Database
 from config import DB_USER, DB_PASS, DB_HOST, DB_PORT, DB_NAME
 from models.models import UserInDB
 
-db = Database(f"postgresql+asyncpg://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
+db = Database("sqlite:///./tambov.db")
 
 
 async def connect_to_db():

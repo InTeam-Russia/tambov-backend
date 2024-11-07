@@ -15,14 +15,13 @@ from models.models import User
 router = APIRouter()
 
 @router.post("/register")
-async def register(username: str, password: str, email: str, firstname: str | None = None, lastname: str | None = None ):
-    query = "INSERT INTO users (username, hashed_password, email, first_name, last_name) VALUES (:username, :hashed_password, :email, :first_name, :last_name)"
+async def register(username: str, name: str, surname: str, password: str):
+    query = "INSERT INTO users (username, name, surname, hashed_password) VALUES (:username, :name, :surname, :hashed_password)"
     values = {
         "username": username,
+        "name": name,
+        "surname": surname,
         "hashed_password": get_password_hash(password),
-        "email": email,
-        "first_name": firstname,
-        "last_name": lastname,
     }
     await db.execute(query=query, values=values)
     return {"status": "ok"}
